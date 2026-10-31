@@ -55,11 +55,33 @@ test('getResponsiveImageProps generates srcSet, sizes, and explicit width/height
 
   assert.equal(props.width, 600);
   assert.equal(props.height, 800);
+  assert.equal(props.aspectRatio, '600 / 800');
   assert.equal(props.loading, 'lazy');
   assert.equal(props.decoding, 'async');
   assert.ok(props.src.includes('f_webp'));
+  assert.ok(props.srcSet?.includes('240w'));
   assert.ok(props.srcSet?.includes('320w'));
   assert.ok(props.srcSet?.includes('600w'));
   assert.ok(props.srcSet?.includes('800w'));
   assert.equal(props.sizes, '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw');
 });
+
+test('getResponsiveImageProps configures hero variant as eager with high fetchPriority and limit crop', () => {
+  const heroCloudUrl = 'https://res.cloudinary.com/gazu/image/upload/v1700000000/hero-model.png';
+  const props = getResponsiveImageProps(heroCloudUrl, 'hero');
+
+  assert.equal(props.loading, 'eager');
+  assert.equal(props.fetchPriority, 'high');
+  assert.ok(props.src.includes('c_limit'));
+  assert.ok(props.srcSet?.includes('360w'));
+  assert.ok(props.srcSet?.includes('1080w'));
+});
+
+test('getOptimizedImageUrl preserves local asset paths and data URLs untouched', () => {
+  const localPath = '/assets/model/male-model-transparent-clean.png';
+  assert.equal(getOptimizedImageUrl(localPath, { width: 480 }), localPath);
+
+  const dataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA';
+  assert.equal(getOptimizedImageUrl(dataUrl, { width: 480 }), dataUrl);
+});
+

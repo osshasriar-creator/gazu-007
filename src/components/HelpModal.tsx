@@ -62,22 +62,22 @@ export const HelpModal: React.FC = () => {
           </button>
         </div>
 
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-6 max-h-[80svh] sm:max-h-[75vh] overflow-y-auto">
           {/* Quick contact banner */}
-          <div className="grid grid-cols-2 gap-3 p-4 bg-white border border-neutral-300 text-xs">
-            <div className="flex items-center space-x-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-white border border-neutral-300 text-xs">
+            <div className="flex items-center space-x-2.5 min-w-0">
               <Phone className="w-4 h-4 text-neutral-700 shrink-0" />
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] uppercase text-neutral-400 block font-semibold">Direct Care</span>
-                <span className="font-bold text-neutral-900">{siteConfig.contact.supportPhone}</span>
+                <span className="font-bold text-neutral-900 break-words">{siteConfig.contact.supportPhone}</span>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2.5">
+            <div className="flex items-center space-x-2.5 min-w-0">
               <Mail className="w-4 h-4 text-neutral-700 shrink-0" />
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] uppercase text-neutral-400 block font-semibold">Email Desk</span>
-                <span className="font-bold text-neutral-900">{siteConfig.contact.supportEmail}</span>
+                <span className="font-bold text-neutral-900 break-all">{siteConfig.contact.supportEmail}</span>
               </div>
             </div>
           </div>
@@ -93,11 +93,11 @@ export const HelpModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full p-3.5 text-left flex justify-between items-center text-xs font-semibold text-neutral-900 cursor-pointer"
+                    className="w-full min-h-[44px] p-3.5 text-left flex justify-between items-center gap-2 text-xs font-semibold text-neutral-900 cursor-pointer"
                   >
                     <span>{faq.q}</span>
                     <ChevronDown
-                      className={`w-4 h-4 text-neutral-500 transition-transform ${
+                      className={`w-4 h-4 text-neutral-500 transition-transform shrink-0 ${
                         openFaq === i ? 'rotate-180' : ''
                       }`}
                     />
@@ -121,3 +121,4 @@ export const HelpModal: React.FC = () => {
     </div>
   );
 };
+

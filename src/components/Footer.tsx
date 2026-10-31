@@ -9,7 +9,14 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
-  const { setActiveCategory, setIsHelpOpen, setIsTrackOrderOpen, setIsAppDownloadOpen } = useStore();
+  const {
+    setActiveCategory,
+    setIsHelpOpen,
+    setIsTrackOrderOpen,
+    setIsAppDownloadOpen,
+    setIsEnvModalOpen,
+    envValidation,
+  } = useStore();
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [newsletterMessage, setNewsletterMessage] = useState('');
@@ -34,12 +41,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
   };
 
   return (
-    <footer aria-label="Store Footer" className="bg-[#0e0e0e] text-white pt-16 pb-12 border-t border-neutral-900">
+    <footer aria-label="Store Footer" className="bg-[#0e0e0e] text-white pt-10 pb-8 sm:pt-16 sm:pb-12 border-t border-neutral-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12 pb-16 border-b border-neutral-800">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-10 lg:gap-12 pb-10 sm:pb-16 border-b border-neutral-800">
           {/* Brand & Newsletter Column */}
-          <div className="md:col-span-5 space-y-4">
+          <div className="md:col-span-5 space-y-3 sm:space-y-4 min-w-0">
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight font-display text-white">
               {siteConfig.brandName}
             </h2>
@@ -48,29 +55,32 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
             </p>
 
             {/* Newsletter Form */}
-            <div className="pt-4">
-              <span className="text-[11px] tracking-[0.2em] uppercase font-bold text-neutral-300 block mb-2">
+            <div className="pt-2 sm:pt-4">
+              <span className="text-[11px] tracking-[0.2em] uppercase font-bold text-neutral-300 block mb-1.5 sm:mb-2">
                 JOIN THE GAZU EDITORIAL CLUB
               </span>
               <p className="text-xs text-neutral-400 mb-3 font-light">
                 Receive private previews of new seasonal collections, archival drops, and exclusive community events.
               </p>
 
-              <form onSubmit={handleSubscribe} className="space-y-2">
-                <div className="flex">
+              <form onSubmit={handleSubscribe} className="space-y-2 max-w-md">
+                <div className="flex w-full min-w-0">
                   <input
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
                     value={newsletterEmail}
                     onChange={(e) => {
                       setNewsletterEmail(e.target.value);
                       if (newsletterStatus !== 'idle') setNewsletterStatus('idle');
                     }}
                     placeholder="Enter your email address"
-                    className="flex-1 bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
+                    aria-label="Email address for newsletter"
+                    className="flex-1 min-w-0 min-h-[44px] bg-neutral-900 border border-neutral-700 px-3 sm:px-3.5 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
                   />
                   <button
                     type="submit"
-                    className="bg-white text-black px-5 py-2.5 text-xs uppercase tracking-widest font-bold hover:bg-neutral-200 transition-colors flex items-center gap-1 cursor-pointer"
+                    className="min-h-[44px] bg-white text-black px-4 sm:px-5 py-2.5 text-xs uppercase tracking-widest font-bold hover:bg-neutral-200 transition-colors flex items-center justify-center gap-1 cursor-pointer shrink-0"
                   >
                     <span>JOIN</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -82,8 +92,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
                 )}
                 {newsletterStatus === 'success' && (
                   <p className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" />
-                    {newsletterMessage}
+                    <Check className="w-3.5 h-3.5 shrink-0" />
+                    <span>{newsletterMessage}</span>
                   </p>
                 )}
               </form>
@@ -91,19 +101,19 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
           </div>
 
           {/* Navigation Links Column */}
-          <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+          <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8 min-w-0">
             {/* Shop */}
-            <div>
-              <h3 className="text-[11px] tracking-[0.2em] uppercase font-bold text-white mb-4">
+            <div className="min-w-0">
+              <h3 className="text-[11px] tracking-[0.2em] uppercase font-bold text-white mb-3 sm:mb-4">
                 COLLECTIONS
               </h3>
-              <ul className="space-y-2.5 text-xs text-neutral-400 font-light">
+              <ul className="space-y-2 text-xs text-neutral-400 font-light">
                 {['Men', 'Women', 'Kids', 'Beauty', 'New In', 'Best Sellers'].map((cat) => (
                   <li key={cat}>
                     <button
                       type="button"
                       onClick={() => handleCategory(cat)}
-                      className="hover:text-white transition-colors cursor-pointer"
+                      className="py-1 hover:text-white transition-colors cursor-pointer text-left"
                     >
                       {cat}
                     </button>
@@ -113,16 +123,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
             </div>
 
             {/* Client Service */}
-            <div>
-              <h3 className="text-[11px] tracking-[0.2em] uppercase font-bold text-white mb-4">
+            <div className="min-w-0">
+              <h3 className="text-[11px] tracking-[0.2em] uppercase font-bold text-white mb-3 sm:mb-4">
                 CLIENT SERVICE
               </h3>
-              <ul className="space-y-2.5 text-xs text-neutral-400 font-light">
+              <ul className="space-y-2 text-xs text-neutral-400 font-light">
                 <li>
                   <button
                     type="button"
                     onClick={() => setIsTrackOrderOpen(true)}
-                    className="hover:text-white transition-colors cursor-pointer"
+                    className="py-1 hover:text-white transition-colors cursor-pointer text-left"
                   >
                     Track Order
                   </button>
@@ -131,7 +141,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
                   <button
                     type="button"
                     onClick={() => setIsHelpOpen(true)}
-                    className="hover:text-white transition-colors cursor-pointer"
+                    className="py-1 hover:text-white transition-colors cursor-pointer text-left"
                   >
                     Shipping & Returns
                   </button>
@@ -140,7 +150,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
                   <button
                     type="button"
                     onClick={() => setIsHelpOpen(true)}
-                    className="hover:text-white transition-colors cursor-pointer"
+                    className="py-1 hover:text-white transition-colors cursor-pointer text-left"
                   >
                     Help & FAQs
                   </button>
@@ -149,13 +159,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
                   <button
                     type="button"
                     onClick={() => setIsAppDownloadOpen(true)}
-                    className="hover:text-white transition-colors cursor-pointer"
+                    className="py-1 hover:text-white transition-colors cursor-pointer text-left"
                   >
                     Download Mobile App
                   </button>
                 </li>
                 <li>
-                  <a href={`mailto:${siteConfig.contact.supportEmail}`} className="hover:text-white transition-colors">
+                  <a
+                    href={`mailto:${siteConfig.contact.supportEmail}`}
+                    className="py-1 inline-block hover:text-white transition-colors break-words"
+                  >
                     Contact Us
                   </a>
                 </li>
@@ -163,11 +176,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
             </div>
 
             {/* About GAZU */}
-            <div>
-              <h3 className="text-[11px] tracking-[0.2em] uppercase font-bold text-white mb-4">
+            <div className="col-span-2 sm:col-span-1 pt-4 sm:pt-0 border-t border-neutral-800/80 sm:border-0 min-w-0">
+              <h3 className="text-[11px] tracking-[0.2em] uppercase font-bold text-white mb-3 sm:mb-4">
                 THE BRAND
               </h3>
-              <ul className="space-y-2.5 text-xs text-neutral-400 font-light">
+              <ul className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:gap-0 sm:space-y-2.5 text-xs text-neutral-400 font-light">
                 <li className="text-neutral-400">Design Philosophy</li>
                 <li className="text-neutral-400">Sustainable Sourcing</li>
                 <li className="text-neutral-400">Flagship Stores</li>
@@ -175,18 +188,30 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
                 <li className="text-neutral-400">Careers</li>
               </ul>
 
-              <div className="mt-6 pt-4 border-t border-neutral-800">
-                <span className="text-[10px] tracking-widest uppercase font-bold text-neutral-400 block mb-2">
+              <div className="mt-5 sm:mt-6 pt-4 border-t border-neutral-800">
+                <span className="text-[10px] tracking-widest uppercase font-bold text-neutral-400 block mb-2.5">
                   CONNECT
                 </span>
                 <div className="flex space-x-3 text-neutral-400">
-                  <a href="#instagram" aria-label="GAZU on Instagram" className="hover:text-white transition-colors">
+                  <a
+                    href="#instagram"
+                    aria-label="GAZU on Instagram"
+                    className="w-9 h-9 rounded-full border border-neutral-800 hover:border-neutral-500 flex items-center justify-center hover:text-white transition-colors"
+                  >
                     <Instagram className="w-4 h-4" />
                   </a>
-                  <a href="#twitter" aria-label="GAZU on Twitter / X" className="hover:text-white transition-colors">
+                  <a
+                    href="#twitter"
+                    aria-label="GAZU on Twitter / X"
+                    className="w-9 h-9 rounded-full border border-neutral-800 hover:border-neutral-500 flex items-center justify-center hover:text-white transition-colors"
+                  >
                     <Twitter className="w-4 h-4" />
                   </a>
-                  <a href="#facebook" aria-label="GAZU on Facebook" className="hover:text-white transition-colors">
+                  <a
+                    href="#facebook"
+                    aria-label="GAZU on Facebook"
+                    className="w-9 h-9 rounded-full border border-neutral-800 hover:border-neutral-500 flex items-center justify-center hover:text-white transition-colors"
+                  >
                     <Facebook className="w-4 h-4" />
                   </a>
                 </div>
@@ -196,23 +221,30 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-500 gap-4">
+        <div className="pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-500 gap-3 sm:gap-4 text-center sm:text-left">
           <p>© {new Date().getFullYear()} {siteConfig.brandName} Studio Inc. All rights reserved.</p>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 gap-y-2">
             <span className="flex items-center gap-1.5 text-neutral-400">
-              <Globe className="w-3.5 h-3.5" />
+              <Globe className="w-3.5 h-3.5 shrink-0" />
               <span>Bangladesh ({siteConfig.currency.code} {siteConfig.currency.symbol})</span>
             </span>
-            <span>•</span>
-            <span className="text-neutral-400">Cloudflare Pages Ready</span>
+            <span className="hidden min-[380px]:inline">•</span>
+            <button
+              type="button"
+              onClick={() => setIsEnvModalOpen(true)}
+              className="py-1 text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+              title="Check Environment Variables & Ephemeral Session Config"
+            >
+              Env Status ({envValidation.presentKeys.length}/4)
+            </button>
             {onNavigateToAdmin && (
               <>
                 <span>•</span>
                 <button
                   type="button"
                   onClick={onNavigateToAdmin}
-                  className="text-neutral-600 hover:text-neutral-300 transition-colors cursor-pointer"
+                  className="py-1 text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
                   title="Staff & Admin Portal (/admin)"
                 >
                   Backend Access
@@ -225,3 +257,4 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateToAdmin }) => {
     </footer>
   );
 };
+

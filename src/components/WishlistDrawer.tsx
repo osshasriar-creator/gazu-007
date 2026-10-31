@@ -39,13 +39,13 @@ export const WishlistDrawer: React.FC = () => {
         onClick={() => setIsWishlistOpen(false)}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-[#f2f1ed] border-l border-neutral-300 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
+        <div className="w-screen max-w-full sm:max-w-md bg-[#f2f1ed] sm:border-l border-neutral-300 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
           {/* Header */}
-          <div className="p-5 sm:p-6 border-b border-neutral-300 flex items-center justify-between bg-[#ecebe6]">
-            <div className="flex items-center space-x-2">
-              <Heart className="w-5 h-5 text-neutral-800 fill-black" />
-              <h2 className="text-base sm:text-lg font-bold tracking-tight uppercase font-display text-neutral-950">
+          <div className="px-4 py-4 sm:p-6 border-b border-neutral-300 flex items-center justify-between bg-[#ecebe6]">
+            <div className="flex items-center space-x-2 min-w-0">
+              <Heart className="w-5 h-5 text-neutral-800 fill-black shrink-0" />
+              <h2 className="text-base sm:text-lg font-bold tracking-tight uppercase font-display text-neutral-950 truncate">
                 Saved Items ({wishlistedProducts.length})
               </h2>
             </div>
@@ -53,16 +53,16 @@ export const WishlistDrawer: React.FC = () => {
               type="button"
               onClick={() => setIsWishlistOpen(false)}
               aria-label="Close wishlist"
-              className="p-1.5 text-neutral-600 hover:text-black transition-colors"
+              className="min-w-[40px] min-h-[40px] -mr-1.5 flex items-center justify-center text-neutral-600 hover:text-black transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3.5 sm:space-y-4">
             {wishlistedProducts.length === 0 ? (
-              <div className="py-20 text-center flex flex-col items-center justify-center">
+              <div className="py-16 sm:py-20 text-center flex flex-col items-center justify-center">
                 <Heart className="w-12 h-12 text-neutral-400 stroke-[1.2] mb-3" />
                 <p className="text-sm font-semibold tracking-wider uppercase text-neutral-800">
                   Your wishlist is empty
@@ -73,7 +73,7 @@ export const WishlistDrawer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsWishlistOpen(false)}
-                  className="mt-6 bg-black text-white px-6 py-2.5 text-xs tracking-widest uppercase font-semibold hover:bg-neutral-800 transition-colors"
+                  className="mt-6 min-h-[44px] bg-black text-white px-6 py-2.5 text-xs tracking-widest uppercase font-semibold hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   Explore Collection
                 </button>
@@ -82,7 +82,7 @@ export const WishlistDrawer: React.FC = () => {
               wishlistedProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="flex space-x-4 p-3 bg-white/70 border border-neutral-300/80 transition-all"
+                  className="flex space-x-3.5 sm:space-x-4 p-3 bg-white/70 border border-neutral-300/80 transition-all min-w-0"
                 >
                   <div
                     className="w-20 h-24 bg-neutral-200 overflow-hidden shrink-0 cursor-pointer"
@@ -101,7 +101,7 @@ export const WishlistDrawer: React.FC = () => {
 
                   <div className="flex-1 min-w-0 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between gap-2">
                         <h4
                           onClick={() => {
                             setQuickViewProduct(product);
@@ -115,13 +115,13 @@ export const WishlistDrawer: React.FC = () => {
                           type="button"
                           onClick={() => toggleWishlist(product.id)}
                           aria-label={`Remove ${product.name} from wishlist`}
-                          className="text-neutral-400 hover:text-red-600 transition-colors"
+                          className="p-1 -m-1 text-neutral-400 hover:text-red-600 transition-colors shrink-0 cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
 
-                      <div className="text-[11px] text-neutral-500 mt-0.5">
+                      <div className="text-[11px] text-neutral-500 mt-0.5 truncate">
                         {product.category} • {product.subcategory}
                       </div>
 
@@ -134,7 +134,7 @@ export const WishlistDrawer: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleMoveToBag(product)}
-                        className="w-full bg-black text-white py-1.5 px-3 text-[11px] tracking-wider uppercase font-semibold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-1.5"
+                        className="w-full min-h-[36px] bg-black text-white py-1.5 px-3 text-[11px] tracking-wider uppercase font-semibold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <span>Move to Bag</span>
                         <ArrowRight className="w-3 h-3" />
@@ -148,13 +148,13 @@ export const WishlistDrawer: React.FC = () => {
 
           {/* Footer */}
           {wishlistedProducts.length > 0 && (
-            <div className="p-5 sm:p-6 border-t border-neutral-300 bg-[#ecebe6]">
+            <div className="p-4 sm:p-6 border-t border-neutral-300 bg-[#ecebe6]">
               <button
                 type="button"
                 onClick={() => {
                   wishlistedProducts.forEach((p) => handleMoveToBag(p));
                 }}
-                className="w-full bg-neutral-900 text-white py-3 text-xs tracking-widest uppercase font-semibold hover:bg-black transition-colors"
+                className="w-full min-h-[44px] bg-neutral-900 text-white py-3 text-xs tracking-widest uppercase font-semibold hover:bg-black transition-colors cursor-pointer"
               >
                 Move All to Bag
               </button>
@@ -165,3 +165,4 @@ export const WishlistDrawer: React.FC = () => {
     </div>
   );
 };
+

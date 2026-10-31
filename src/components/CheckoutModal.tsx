@@ -296,37 +296,37 @@ export const CheckoutModal: React.FC = () => {
                   <h3 className="text-xs font-bold tracking-widest uppercase text-neutral-900 border-b border-neutral-300 pb-2 mb-3">
                     4. Payment Option
                   </h3>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('cod')}
-                      className={`p-3 border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                      className={`min-h-[48px] p-3 border text-center transition-all cursor-pointer flex min-[380px]:flex-col items-center justify-center gap-2 min-[380px]:gap-0 ${
                         paymentMethod === 'cod' ? 'border-black bg-black text-white' : 'border-neutral-300 bg-white text-neutral-800'
                       }`}
                     >
-                      <Banknote className="w-5 h-5 mb-1" />
+                      <Banknote className="w-5 h-5 min-[380px]:mb-1 shrink-0" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Cash on Delivery</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('card')}
-                      className={`p-3 border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                      className={`min-h-[48px] p-3 border text-center transition-all cursor-pointer flex min-[380px]:flex-col items-center justify-center gap-2 min-[380px]:gap-0 ${
                         paymentMethod === 'card' ? 'border-black bg-black text-white' : 'border-neutral-300 bg-white text-neutral-800'
                       }`}
                     >
-                      <CreditCard className="w-5 h-5 mb-1" />
+                      <CreditCard className="w-5 h-5 min-[380px]:mb-1 shrink-0" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Card Demo</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('mobile')}
-                      className={`p-3 border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                      className={`min-h-[48px] p-3 border text-center transition-all cursor-pointer flex min-[380px]:flex-col items-center justify-center gap-2 min-[380px]:gap-0 ${
                         paymentMethod === 'mobile' ? 'border-black bg-black text-white' : 'border-neutral-300 bg-white text-neutral-800'
                       }`}
                     >
-                      <Smartphone className="w-5 h-5 mb-1" />
+                      <Smartphone className="w-5 h-5 min-[380px]:mb-1 shrink-0" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">bKash / Nagad</span>
                     </button>
                   </div>
@@ -334,7 +334,7 @@ export const CheckoutModal: React.FC = () => {
               </div>
 
               {/* Right Column: Order Summary */}
-              <div className="md:col-span-5 bg-[#ecebe6] p-5 border border-neutral-300 flex flex-col justify-between">
+              <div className="md:col-span-5 bg-[#ecebe6] p-4 sm:p-5 border border-neutral-300 flex flex-col justify-between min-w-0">
                 <div>
                   <h3 className="text-xs font-bold tracking-widest uppercase text-neutral-900 border-b border-neutral-300 pb-2 mb-3">
                     Order Summary ({cart.reduce((t, i) => t + i.quantity, 0)})
@@ -342,13 +342,21 @@ export const CheckoutModal: React.FC = () => {
 
                   <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                     {cart.map((item) => (
-                      <div key={item.id} className="flex items-center space-x-3 text-xs">
-                        <img src={item.image} alt={item.name} className="w-10 h-12 object-cover shrink-0 bg-neutral-200" />
+                      <div key={item.id} className="flex items-center space-x-3 text-xs min-w-0">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          width={40}
+                          height={48}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-10 h-12 object-cover shrink-0 bg-neutral-200"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-neutral-900 truncate">{item.name}</p>
                           <p className="text-[11px] text-neutral-500">Qty: {item.quantity} • {item.size}</p>
                         </div>
-                        <span className="font-bold text-neutral-900">
+                        <span className="font-bold text-neutral-900 shrink-0">
                           {formatCurrency((item.salePrice || item.price) * item.quantity, currencySymbol)}
                         </span>
                       </div>
@@ -384,7 +392,7 @@ export const CheckoutModal: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting || cart.length === 0}
-                    className="w-full bg-black text-white py-3.5 px-4 text-xs tracking-[0.2em] uppercase font-bold hover:bg-neutral-800 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full min-h-[48px] bg-black text-white py-3.5 px-4 text-xs tracking-[0.2em] uppercase font-bold hover:bg-neutral-800 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <span>{isSubmitting ? 'Confirming Demo Order...' : 'Confirm Order (Demo)'}</span>
                     <ArrowRight className="w-4 h-4" />

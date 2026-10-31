@@ -9,6 +9,8 @@
  *   and maximize page load speed.
  */
 
+import { validateEnvironment } from '../utils/envValidator';
+
 export interface CloudinaryConfig {
   cloudName: string;
   uploadPreset: string;
@@ -24,7 +26,7 @@ export interface ImageTransformOptions {
   dpr?: 'auto' | number;
 }
 
-export type ProductImageVariant = 'card' | 'detail' | 'thumbnail' | 'search' | 'banner';
+export type ProductImageVariant = 'card' | 'detail' | 'thumbnail' | 'search' | 'banner' | 'hero';
 
 export interface ResponsiveImageProps {
   src: string;
@@ -32,26 +34,19 @@ export interface ResponsiveImageProps {
   sizes?: string;
   width: number;
   height: number;
+  aspectRatio: string;
   loading: 'lazy' | 'eager';
   decoding: 'async';
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 const CONFIG_KEY = 'gazu_cloudinary_config';
 
 export function getCloudinaryConfig(): CloudinaryConfig {
-  const stored = typeof window !== 'undefined' ? localStorage.getItem(CONFIG_KEY) : null;
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      // ignore invalid JSON
-    }
-  }
-
-  const metaEnv = (typeof import.meta !== 'undefined' && (import.meta as any).env) || {};
+  const envCheck = validateEnvironment();
   return {
-    cloudName: metaEnv.VITE_CLOUDINARY_CLOUD_NAME || '',
-    uploadPreset: metaEnv.VITE_CLOUDINARY_UPLOAD_PRESET || '',
+    cloudName: envCheck.values.VITE_CLOUDINARY_CLOUD_NAME || '',
+    uploadPreset: envCheck.values.VITE_CLOUDINARY_UPLOAD_PRESET || '',
   };
 }
 
@@ -93,7 +88,7 @@ function stripExistingCloudinaryTransformations(url: string): string {
 }
 
 /**
- * Transforms an image URL on-the-fly with dynamic sizing and WebP optimization.
+ * Transforms an image URL on-the-fly with dynamic sizing and WebP/auto format optimization.
  * - For Cloudinary URLs: injects `f_webp,q_auto:good,c_fill,g_auto,w_...,h_...`
  * - For Unsplash catalog URLs: sets `fm=webp&auto=format&fit=crop&w=...&h=...&q=80`
  */
@@ -102,6 +97,9 @@ export function getOptimizedImageUrl(
   options: ImageTransformOptions = {}
 ): string {
   if (!url) return '';
+  if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('/')) {
+    return url;
+  }
 
   const {
     width = 600,
@@ -137,7 +135,7 @@ export function getOptimizedImageUrl(
       const parsed = new URL(url);
       parsed.searchParams.set('fm', format === 'auto' ? 'webp' : format);
       parsed.searchParams.set('auto', 'format');
-      parsed.searchParams.set('fit', 'crop');
+      parsed.searchParams.set('fit', crop === 'limit' || crop === 'fit' ? 'max' : 'crop');
       if (width) parsed.searchParams.set('w', String(Math.round(width)));
       if (height) parsed.searchParams.set('h', String(Math.round(height)));
       parsed.searchParams.set('q', quality === 'auto:eco' ? '72' : '80');
@@ -152,7 +150,7 @@ export function getOptimizedImageUrl(
 
 /**
  * Preset configurations for responsive product image variants across the storefront.
- * Enforces a consistent 3:4 aspect ratio for fashion product imagery and provides
+ * Enforces a consistent aspect ratio for fashion product imagery and provides
  * explicit width/height attributes for zero layout shift.
  */
 const VARIANT_PRESETS: Record<
@@ -165,12 +163,13 @@ const VARIANT_PRESETS: Record<
     quality: ImageTransformOptions['quality'];
     crop: ImageTransformOptions['crop'];
     loading: 'lazy' | 'eager';
+    fetchPriority?: 'high' | 'low' | 'auto';
   }
 > = {
   card: {
     width: 600,
     height: 800,
-    widths: [320, 480, 600, 800],
+    widths: [240, 320, 480, 600, 800],
     sizes: '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw',
     quality: 'auto:good',
     crop: 'fill',
@@ -179,7 +178,7 @@ const VARIANT_PRESETS: Record<
   detail: {
     width: 800,
     height: 1067,
-    widths: [480, 640, 800, 1080],
+    widths: [360, 480, 640, 800, 1080],
     sizes: '(max-width: 768px) 92vw, 440px',
     quality: 'auto:good',
     crop: 'fill',
@@ -197,7 +196,7 @@ const VARIANT_PRESETS: Record<
   search: {
     width: 240,
     height: 320,
-    widths: [120, 240, 360],
+    widths: [120, 180, 240, 360],
     sizes: '(max-width: 640px) 45vw, 180px',
     quality: 'auto:eco',
     crop: 'fill',
@@ -206,16 +205,26 @@ const VARIANT_PRESETS: Record<
   banner: {
     width: 1200,
     height: 900,
-    widths: [640, 960, 1200, 1600],
+    widths: [400, 640, 960, 1200, 1600],
     sizes: '(max-width: 768px) 100vw, 50vw',
     quality: 'auto:good',
     crop: 'fill',
     loading: 'lazy',
   },
+  hero: {
+    width: 800,
+    height: 1000,
+    widths: [360, 480, 640, 800, 1080],
+    sizes: '(max-width: 640px) 90vw, (max-width: 1024px) 500px, 620px',
+    quality: 'auto:good',
+    crop: 'limit',
+    loading: 'eager',
+    fetchPriority: 'high',
+  },
 };
 
 /**
- * Generates responsive `src`, `srcSet`, `sizes`, `width`, `height`, `loading`, and `decoding`
+ * Generates responsive `src`, `srcSet`, `sizes`, `width`, `height`, `aspectRatio`, `loading`, and `decoding`
  * attributes for any product or editorial image URL.
  */
 export function getResponsiveImageProps(
@@ -226,16 +235,17 @@ export function getResponsiveImageProps(
     height: number;
     loading: 'lazy' | 'eager';
     sizes: string;
+    fetchPriority: 'high' | 'low' | 'auto';
   }>
 ): ResponsiveImageProps {
   const preset = VARIANT_PRESETS[variant];
   const targetWidth = overrides?.width || preset.width;
   const targetHeight = overrides?.height || preset.height;
-  const aspectRatio = targetHeight / targetWidth;
+  const ratio = targetHeight / targetWidth;
 
   const src = getOptimizedImageUrl(url, {
     width: targetWidth,
-    height: targetHeight,
+    height: preset.crop === 'limit' ? undefined : targetHeight,
     crop: preset.crop,
     quality: preset.quality,
     format: 'webp',
@@ -248,7 +258,7 @@ export function getResponsiveImageProps(
   const srcSet = supportsDynamicResize
     ? preset.widths
         .map((w) => {
-          const h = Math.round(w * aspectRatio);
+          const h = preset.crop === 'limit' ? undefined : Math.round(w * ratio);
           const candidateUrl = getOptimizedImageUrl(url, {
             width: w,
             height: h,
@@ -267,8 +277,10 @@ export function getResponsiveImageProps(
     sizes: srcSet ? overrides?.sizes || preset.sizes : undefined,
     width: targetWidth,
     height: targetHeight,
+    aspectRatio: `${targetWidth} / ${targetHeight}`,
     loading: overrides?.loading || preset.loading,
     decoding: 'async',
+    fetchPriority: overrides?.fetchPriority || preset.fetchPriority,
   };
 }
 

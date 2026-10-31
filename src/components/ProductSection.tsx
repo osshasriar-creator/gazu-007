@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { SlidersHorizontal, ArrowUpDown, X } from 'lucide-react';
 import { ProductCard } from './ProductCard';
-import { PRODUCTS, type Product } from '../data/products';
+import { type Product } from '../data/products';
 import { useStore } from '../context/StoreContext';
 
 interface ProductSectionProps {
@@ -11,7 +11,7 @@ interface ProductSectionProps {
 type SortOption = 'featured' | 'price-asc' | 'price-desc' | 'newest' | 'rating';
 
 export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) => {
-  const { activeCategory, setActiveCategory, products } = useStore();
+  const { activeCategory, setActiveCategory, products, isLoadingProducts } = useStore();
   const [sortBy, setSortBy] = useState<SortOption>('featured');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
   const [selectedSizeFilter, setSelectedSizeFilter] = useState<string>('All');
@@ -75,7 +75,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
     }
 
     return list;
-  }, [activeCategory, selectedSubcategory, selectedSizeFilter, sortBy]);
+  }, [products, activeCategory, selectedSubcategory, selectedSizeFilter, sortBy]);
 
   const hasActiveFilters =
     activeCategory !== 'All' || selectedSubcategory !== 'All' || selectedSizeFilter !== 'All';
@@ -91,10 +91,10 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
     <section
       id="catalog-section"
       aria-label="Best of GAZU Catalog"
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24"
+      className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-10 sm:py-24"
     >
       {/* Top Header Row matching Reference */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between pb-6 border-b border-neutral-300 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 sm:pb-6 border-b border-neutral-300 gap-3 sm:gap-4">
         <div>
           <span className="text-[11px] tracking-[0.25em] uppercase text-neutral-500 font-semibold block mb-1">
             CURATED EDIT
@@ -109,17 +109,17 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
           <button
             type="button"
             onClick={resetFilters}
-            className="text-xs tracking-[0.2em] uppercase font-semibold text-neutral-900 border-b border-black pb-0.5 hover:text-neutral-600 transition-colors cursor-pointer"
+            className="min-h-[36px] sm:min-h-0 inline-flex items-center text-xs tracking-[0.2em] uppercase font-semibold text-neutral-900 border-b border-black pb-0.5 hover:text-neutral-600 transition-colors cursor-pointer"
           >
-            VIEW ALL ({PRODUCTS.length})
+            VIEW ALL ({products.length})
           </button>
         </div>
       </div>
 
       {/* Category Tabs & Filter Toolbar */}
-      <div className="py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-neutral-200">
+      <div className="py-4 sm:py-6 flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 border-b border-neutral-200">
         {/* Category Pills */}
-        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
           {filterTabs.map((tab) => {
             const isSelected = activeCategory.toLowerCase() === tab.toLowerCase();
             return (
@@ -130,10 +130,10 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
                   setActiveCategory(tab);
                   setSelectedSubcategory('All');
                 }}
-                className={`px-4 py-2 text-xs tracking-widest uppercase transition-all whitespace-nowrap cursor-pointer ${
+                className={`min-h-[40px] px-3.5 sm:px-4 py-2 text-xs tracking-widest uppercase transition-all whitespace-nowrap cursor-pointer flex items-center justify-center ${
                   isSelected
                     ? 'bg-black text-white font-semibold'
-                    : 'bg-transparent text-neutral-700 hover:text-black hover:bg-neutral-200/60 font-medium'
+                    : 'bg-white/50 sm:bg-transparent text-neutral-700 hover:text-black hover:bg-neutral-200/60 font-medium border border-neutral-300/60 sm:border-0'
                 }`}
               >
                 {tab}
@@ -143,15 +143,15 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
         </div>
 
         {/* Controls: Subcategory & Sort Selector */}
-        <div className="flex items-center space-x-3 text-xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 text-xs w-full md:w-auto">
           {/* Subcategory dropdown if relevant */}
           {availableSubcategories.length > 2 && (
-            <div className="flex items-center space-x-1.5 border border-neutral-300 bg-white/70 px-3 py-1.5">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-neutral-500" />
+            <div className="flex items-center space-x-2 border border-neutral-300 bg-white/80 px-3 min-h-[42px] sm:min-h-0 sm:py-1.5 min-w-0">
+              <SlidersHorizontal className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-neutral-500 shrink-0" />
               <select
                 value={selectedSubcategory}
                 onChange={(e) => setSelectedSubcategory(e.target.value)}
-                className="bg-transparent text-xs text-neutral-800 tracking-wider font-medium focus:outline-none cursor-pointer"
+                className="w-full bg-transparent text-xs text-neutral-800 tracking-wider font-medium focus:outline-none cursor-pointer"
                 aria-label="Filter by subcategory"
               >
                 {availableSubcategories.map((sub) => (
@@ -164,12 +164,12 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
           )}
 
           {/* Sort By */}
-          <div className="flex items-center space-x-1.5 border border-neutral-300 bg-white/70 px-3 py-1.5">
-            <ArrowUpDown className="w-3.5 h-3.5 text-neutral-500" />
+          <div className="flex items-center space-x-2 border border-neutral-300 bg-white/80 px-3 min-h-[42px] sm:min-h-0 sm:py-1.5 min-w-0">
+            <ArrowUpDown className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-neutral-500 shrink-0" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="bg-transparent text-xs text-neutral-800 tracking-wider font-medium focus:outline-none cursor-pointer"
+              className="w-full bg-transparent text-xs text-neutral-800 tracking-wider font-medium focus:outline-none cursor-pointer"
               aria-label="Sort products"
             >
               <option value="featured">Featured First</option>
@@ -187,35 +187,35 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
         <div className="flex items-center flex-wrap gap-2 pt-4 pb-2">
           <span className="text-[11px] tracking-wider text-neutral-500 uppercase font-semibold">Active:</span>
           {activeCategory !== 'All' && (
-            <span className="inline-flex items-center gap-1 bg-neutral-200 text-neutral-800 text-[11px] px-2.5 py-1 font-medium">
+            <span className="inline-flex items-center gap-1.5 bg-neutral-200 text-neutral-800 text-[11px] px-2.5 py-1.5 font-medium">
               Category: {activeCategory}
               <button
                 type="button"
                 onClick={() => setActiveCategory('All')}
                 aria-label="Remove category filter"
-                className="hover:text-black"
+                className="p-0.5 hover:text-black cursor-pointer"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </span>
           )}
           {selectedSubcategory !== 'All' && (
-            <span className="inline-flex items-center gap-1 bg-neutral-200 text-neutral-800 text-[11px] px-2.5 py-1 font-medium">
+            <span className="inline-flex items-center gap-1.5 bg-neutral-200 text-neutral-800 text-[11px] px-2.5 py-1.5 font-medium">
               Type: {selectedSubcategory}
               <button
                 type="button"
                 onClick={() => setSelectedSubcategory('All')}
                 aria-label="Remove subcategory filter"
-                className="hover:text-black"
+                className="p-0.5 hover:text-black cursor-pointer"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </span>
           )}
           <button
             type="button"
             onClick={resetFilters}
-            className="text-[11px] text-neutral-500 hover:text-black underline tracking-wider uppercase ml-2"
+            className="min-h-[32px] text-[11px] text-neutral-500 hover:text-black underline tracking-wider uppercase ml-2 cursor-pointer"
           >
             Clear all
           </button>
@@ -224,13 +224,13 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
 
       {/* Product Cards Grid */}
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 pt-8">
+        <div className="grid grid-cols-1 min-[340px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8 pt-6 sm:pt-8">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-24 bg-[#ecebe6] border border-neutral-300 mt-8">
+        <div className="text-center py-16 sm:py-24 px-4 bg-[#ecebe6] border border-neutral-300 mt-6 sm:mt-8">
           <p className="text-sm font-semibold tracking-widest uppercase text-neutral-800">
             No products match the selected filters
           </p>
@@ -240,7 +240,7 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
           <button
             type="button"
             onClick={resetFilters}
-            className="mt-6 bg-black text-white px-6 py-2.5 text-xs tracking-widest uppercase font-semibold hover:bg-neutral-800 transition-colors"
+            className="mt-6 min-h-[44px] bg-black text-white px-6 py-2.5 text-xs tracking-widest uppercase font-semibold hover:bg-neutral-800 transition-colors cursor-pointer"
           >
             Reset Filters
           </button>
@@ -249,3 +249,4 @@ export const ProductSection: React.FC<ProductSectionProps> = ({ onQuickView }) =
     </section>
   );
 };
+

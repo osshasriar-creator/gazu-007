@@ -39,7 +39,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
       role="dialog"
       aria-modal="true"
       aria-label={product.name}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto"
     >
       {/* Backdrop */}
       <div
@@ -48,22 +48,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-4xl bg-[#f2f1ed] border border-neutral-300 shadow-2xl z-10 my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-4xl bg-[#f2f1ed] border-t sm:border border-neutral-300 shadow-2xl z-10 my-0 sm:my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[94svh] sm:max-h-[88vh] flex flex-col">
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-black hover:text-white flex items-center justify-center text-neutral-800 transition-colors shadow-sm cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-black hover:text-white flex items-center justify-center text-neutral-800 transition-colors shadow-sm cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 max-h-[85vh] overflow-y-auto">
+        <div className="grid grid-cols-1 md:grid-cols-12 overflow-y-auto flex-1">
           {/* Left Column: Image Gallery */}
           <div className="md:col-span-6 bg-neutral-200 p-4 sm:p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-neutral-300">
             {/* Main Image */}
-            <div className="relative aspect-[3/4] w-full max-w-sm overflow-hidden bg-neutral-300 shadow-sm">
+            <div className="relative aspect-[3/4] w-full max-w-[280px] sm:max-w-sm overflow-hidden bg-neutral-300 shadow-sm">
               <ResponsiveProductImage
                 src={selectedImage}
                 alt={product.name}
@@ -79,13 +79,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
             {/* Thumbnails */}
             {product.galleryImages.length > 1 && (
-              <div className="flex items-center space-x-2 mt-4 overflow-x-auto no-scrollbar">
+              <div className="flex items-center space-x-2 mt-3.5 sm:mt-4 overflow-x-auto no-scrollbar max-w-full">
                 {product.galleryImages.map((img, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => setSelectedImage(img)}
-                    className={`w-14 h-18 overflow-hidden border-2 transition-all cursor-pointer ${
+                    className={`w-14 h-18 overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
                       selectedImage === img ? 'border-black scale-105' : 'border-transparent opacity-70 hover:opacity-100'
                     }`}
                   >
@@ -102,12 +102,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
           </div>
 
           {/* Right Column: Product Specs & Actions */}
-          <div className="md:col-span-6 p-6 sm:p-8 flex flex-col justify-between">
+          <div className="md:col-span-6 p-4 sm:p-8 flex flex-col justify-between min-w-0">
             <div>
               {/* Category & Rating */}
-              <div className="flex items-center justify-between text-[11px] tracking-widest uppercase text-neutral-500 font-semibold mb-2">
-                <span>{product.category} / {product.subcategory}</span>
-                <div className="flex items-center space-x-1 text-neutral-800">
+              <div className="flex items-center justify-between gap-2 text-[11px] tracking-widest uppercase text-neutral-500 font-semibold mb-2">
+                <span className="truncate">{product.category} / {product.subcategory}</span>
+                <div className="flex items-center space-x-1 text-neutral-800 shrink-0">
                   <Star className="w-3.5 h-3.5 fill-black text-black" />
                   <span className="font-bold">{product.rating}</span>
                   <span className="text-neutral-500">({product.reviewCount})</span>
@@ -120,7 +120,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               </h2>
 
               {/* Price */}
-              <div className="flex items-baseline space-x-3 mt-3">
+              <div className="flex items-baseline flex-wrap gap-x-3 gap-y-1 mt-2.5 sm:mt-3">
                 {product.salePrice ? (
                   <>
                     <span className="text-xl font-extrabold text-neutral-950">
@@ -145,22 +145,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               </p>
 
               {/* Color Selection */}
-              <div className="mt-5">
+              <div className="mt-4 sm:mt-5">
                 <div className="flex items-center justify-between text-xs mb-2">
                   <span className="text-neutral-500 tracking-wider uppercase font-semibold text-[11px]">
                     Color:
                   </span>
                   <span className="font-medium text-neutral-900">{selectedColor}</span>
                 </div>
-                <div className="flex items-center space-x-2.5">
+                <div className="flex items-center flex-wrap gap-2.5">
                   {product.colors.map((c) => (
                     <button
                       key={c.name}
                       type="button"
                       onClick={() => setSelectedColor(c.name)}
-                      className={`group relative flex items-center justify-center p-1 border transition-all cursor-pointer ${
+                      className={`group relative flex items-center justify-center p-1.5 border transition-all cursor-pointer ${
                         selectedColor === c.name ? 'border-black' : 'border-neutral-300 hover:border-neutral-500'
                       }`}
+                      aria-label={`Select color ${c.name}`}
                     >
                       <span
                         className="w-5 h-5 block border border-black/10"
@@ -172,7 +173,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               </div>
 
               {/* Size Selection */}
-              <div className="mt-5">
+              <div className="mt-4 sm:mt-5">
                 <div className="flex items-center justify-between text-xs mb-2">
                   <span className="text-neutral-500 tracking-wider uppercase font-semibold text-[11px]">
                     Select Size:
@@ -180,7 +181,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   <button
                     type="button"
                     onClick={() => setShowSizeGuide(!showSizeGuide)}
-                    className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-neutral-600 hover:text-black underline cursor-pointer"
+                    className="min-h-[32px] inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-neutral-600 hover:text-black underline cursor-pointer"
                   >
                     <HelpCircle className="w-3 h-3" /> Size Guide
                   </button>
@@ -190,7 +191,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 {showSizeGuide && (
                   <div className="mb-3 p-3 bg-neutral-200/80 text-[11px] text-neutral-700 border border-neutral-300">
                     <p className="font-semibold mb-1 uppercase tracking-wider">Garment Measurements (Inches)</p>
-                    <div className="grid grid-cols-4 gap-1 text-center py-1 font-mono">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-left sm:text-center py-1 font-mono">
                       <span>S: Chest 38&quot;</span>
                       <span>M: Chest 40&quot;</span>
                       <span>L: Chest 42&quot;</span>
@@ -205,7 +206,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                       key={sz}
                       type="button"
                       onClick={() => setSelectedSize(sz)}
-                      className={`py-2 text-xs font-semibold tracking-wider uppercase border transition-all cursor-pointer ${
+                      className={`min-h-[40px] py-2 text-xs font-semibold tracking-wider uppercase border transition-all cursor-pointer ${
                         selectedSize === sz
                           ? 'border-black bg-black text-white'
                           : 'border-neutral-300 bg-white/60 text-neutral-800 hover:border-black'
@@ -218,7 +219,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               </div>
 
               {/* Quantity */}
-              <div className="mt-5 flex items-center space-x-4">
+              <div className="mt-4 sm:mt-5 flex items-center space-x-4">
                 <span className="text-neutral-500 tracking-wider uppercase font-semibold text-[11px]">
                   Quantity:
                 </span>
@@ -226,7 +227,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="w-8 h-8 flex items-center justify-center text-neutral-600 hover:text-black font-semibold"
+                    aria-label="Decrease quantity"
+                    className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center text-neutral-600 hover:text-black font-semibold cursor-pointer"
                   >
                     -
                   </button>
@@ -236,7 +238,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => q + 1)}
-                    className="w-8 h-8 flex items-center justify-center text-neutral-600 hover:text-black font-semibold"
+                    aria-label="Increase quantity"
+                    className="w-9 h-9 sm:w-8 sm:h-8 flex items-center justify-center text-neutral-600 hover:text-black font-semibold cursor-pointer"
                   >
                     +
                   </button>
@@ -244,11 +247,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               </div>
 
               {/* Add to Cart & Wishlist Actions */}
-              <div className="mt-6 flex items-center space-x-3">
+              <div className="mt-5 sm:mt-6 flex items-center space-x-3">
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className={`flex-1 py-3.5 px-6 text-xs sm:text-[13px] tracking-[0.2em] uppercase font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md ${
+                  className={`flex-1 min-h-[48px] py-3.5 px-5 sm:px-6 text-xs sm:text-[13px] tracking-[0.2em] uppercase font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md ${
                     addedAnimation
                       ? 'bg-emerald-700 text-white'
                       : 'bg-black text-white hover:bg-neutral-800 active:scale-98'
@@ -269,7 +272,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   type="button"
                   onClick={() => toggleWishlist(product.id)}
                   aria-label={isFavorited ? 'Remove from wishlist' : 'Save to wishlist'}
-                  className="w-12 h-12 border border-neutral-300 bg-white/80 hover:bg-white flex items-center justify-center text-neutral-800 hover:text-black transition-colors cursor-pointer"
+                  className="w-12 h-12 shrink-0 border border-neutral-300 bg-white/80 hover:bg-white flex items-center justify-center text-neutral-800 hover:text-black transition-colors cursor-pointer"
                 >
                   <Heart
                     className={`w-5 h-5 ${isFavorited ? 'fill-red-600 text-red-600' : ''}`}
@@ -279,18 +282,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
               {/* Guarantees */}
               <div className="mt-4 flex items-center space-x-2 text-[11px] text-neutral-500">
-                <Shield className="w-3.5 h-3.5 text-neutral-700" />
+                <Shield className="w-3.5 h-3.5 text-neutral-700 shrink-0" />
                 <span>Free delivery over {currencySymbol}{siteConfig.shipping.freeThreshold} • 15 days easy returns</span>
               </div>
             </div>
 
             {/* Accordion Tabs */}
             <div className="mt-6 pt-4 border-t border-neutral-300 text-xs">
-              <div className="flex space-x-6 border-b border-neutral-200 pb-2">
+              <div className="flex space-x-4 sm:space-x-6 border-b border-neutral-200 pb-2 overflow-x-auto no-scrollbar">
                 <button
                   type="button"
                   onClick={() => setActiveTab('details')}
-                  className={`tracking-wider uppercase font-semibold text-[11px] pb-1 transition-colors ${
+                  className={`tracking-wider uppercase font-semibold text-[11px] pb-1 whitespace-nowrap transition-colors cursor-pointer ${
                     activeTab === 'details' ? 'border-b-2 border-black text-black' : 'text-neutral-500 hover:text-black'
                   }`}
                 >
@@ -299,7 +302,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 <button
                   type="button"
                   onClick={() => setActiveTab('care')}
-                  className={`tracking-wider uppercase font-semibold text-[11px] pb-1 transition-colors ${
+                  className={`tracking-wider uppercase font-semibold text-[11px] pb-1 whitespace-nowrap transition-colors cursor-pointer ${
                     activeTab === 'care' ? 'border-b-2 border-black text-black' : 'text-neutral-500 hover:text-black'
                   }`}
                 >
@@ -308,7 +311,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 <button
                   type="button"
                   onClick={() => setActiveTab('shipping')}
-                  className={`tracking-wider uppercase font-semibold text-[11px] pb-1 transition-colors ${
+                  className={`tracking-wider uppercase font-semibold text-[11px] pb-1 whitespace-nowrap transition-colors cursor-pointer ${
                     activeTab === 'shipping' ? 'border-b-2 border-black text-black' : 'text-neutral-500 hover:text-black'
                   }`}
                 >
@@ -349,3 +352,4 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
     </div>
   );
 };
+

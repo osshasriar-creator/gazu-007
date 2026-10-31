@@ -29,6 +29,7 @@ import {
   PackageCheck,
   Activity,
   ArrowUpRight,
+  Download,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import {
@@ -40,6 +41,11 @@ import {
   DEFAULT_ADMIN_PASSWORD,
 } from '../utils/adminAuth';
 import { uploadToCloudinary, getOptimizedImageUrl } from '../services/cloudinary';
+import {
+  fetchDashboardMetrics,
+  exportProductsToCSV,
+  type DashboardMetrics,
+} from '../services/tursoService';
 import { type Product } from '../data/products';
 
 interface AdminPageProps {
@@ -58,11 +64,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
     updateCloudinaryConfig,
     isCloudinaryConfigured,
     products,
-    saveProduct,
+    addProduct,
     deleteProduct,
     orders,
     updateOrderStatus,
     showToast,
+    envValidation,
+    setIsEnvModalOpen,
   } = useStore();
 
   // Authentication State
@@ -76,78 +84,52 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
   // Active Tab State (Dashboard is default)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'hero' | 'products' | 'categories' | 'orders' | 'integrations' | 'security'>('dashboard');
 
-  // Key Business Metrics computed from Turso database & orders
-  const totalRevenue = useMemo(() => {
-    return orders.reduce((sum, o) => sum + (o.total || 0), 0);
-  }, [orders]);
+  // Business Metrics retrieved via tursoService.fetchDashboardMetrics
+  const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
 
-  const totalOrdersCount = orders.length;
-
-  const avgOrderValue = useMemo(() => {
-    return totalOrdersCount > 0 ? Math.round(totalRevenue / totalOrdersCount) : 0;
-  }, [totalRevenue, totalOrdersCount]);
-
-  const statusCounts = useMemo(() => {
-    return {
-      delivered: orders.filter((o) => o.status === 'Delivered').length,
-      processing: orders.filter((o) => o.status === 'Processing & Quality Check').length,
-      outForDelivery: orders.filter((o) => o.status === 'Out for Delivery').length,
-      placed: orders.filter((o) => o.status === 'Order Placed').length,
+  useEffect(() => {
+    let active = true;
+    fetchDashboardMetrics({
+      fallbackProducts: products,
+      fallbackOrders: orders,
+    })
+      .then((metrics) => {
+        if (active) {
+          setDashboardMetrics(metrics);
+        }
+      })
+      .catch((err) => {
+        console.warn('Dashboard metrics load error:', err);
+      });
+    return () => {
+      active = false;
     };
-  }, [orders]);
+  }, [products, orders, isTursoConnected]);
 
-  // Top selling products computation
-  const topSellingProducts = useMemo(() => {
-    const counts = new Map<string, { product: Product; unitsSold: number; totalSales: number }>();
-
-    orders.forEach((o) => {
-      o.items?.forEach((it) => {
-        const prod = products.find((p) => p.id === it.productId);
-        if (!prod) return;
-        const current = counts.get(prod.id) || {
-          product: prod,
-          unitsSold: 0,
-          totalSales: 0,
-        };
-        const qty = it.quantity || 1;
-        current.unitsSold += qty;
-        current.totalSales += (it.price || prod.salePrice || prod.price) * qty;
-        counts.set(prod.id, current);
-      });
-    });
-
-    const list = Array.from(counts.values()).sort((a, b) => b.unitsSold - a.unitsSold);
-
-    // If order history has few items, supplement with best-sellers from catalog
-    if (list.length < 4) {
-      const bestSellers = products.filter((p) => p.isBestSeller && !counts.has(p.id));
-      bestSellers.forEach((p, idx) => {
-        list.push({
-          product: p,
-          unitsSold: Math.max(14 - idx * 2, 4),
-          totalSales: (p.salePrice || p.price) * Math.max(14 - idx * 2, 4),
-        });
-      });
-    }
-
-    return list.slice(0, 5);
-  }, [orders, products]);
-
-  // 7-day revenue trend data for the visual bar chart
-  const weeklySalesData = useMemo(() => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const baseAmounts = [2400, 3800, 5200, 4100, 6800, 8900, 7200];
-    if (totalRevenue > 0) {
-      const multiplier = Math.max(0.6, totalRevenue / 10000);
-      return days.map((day, i) => ({
-        day,
-        amount: Math.round(baseAmounts[i] * multiplier),
-      }));
-    }
-    return days.map((day, i) => ({ day, amount: baseAmounts[i] }));
-  }, [totalRevenue]);
-
-  const maxWeeklyAmount = Math.max(...weeklySalesData.map((d) => d.amount), 1);
+  const totalRevenue = dashboardMetrics?.totalSales ?? orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const totalOrdersCount = dashboardMetrics?.totalOrders ?? orders.length;
+  const avgOrderValue =
+    dashboardMetrics?.avgOrderValue ??
+    (totalOrdersCount > 0 ? Math.round(totalRevenue / totalOrdersCount) : 0);
+  const statusCounts = dashboardMetrics?.statusCounts ?? {
+    delivered: orders.filter((o) => o.status === 'Delivered').length,
+    processing: orders.filter((o) => o.status === 'Processing & Quality Check').length,
+    outForDelivery: orders.filter((o) => o.status === 'Out for Delivery').length,
+    placed: orders.filter((o) => o.status === 'Order Placed').length,
+    cancelled: 0,
+  };
+  const topSellingProducts = dashboardMetrics?.topSellingProducts ?? [];
+  const weeklySalesData = dashboardMetrics?.weeklySalesData ?? [
+    { day: 'Mon', amount: 2400 },
+    { day: 'Tue', amount: 3800 },
+    { day: 'Wed', amount: 5200 },
+    { day: 'Thu', amount: 4100 },
+    { day: 'Fri', amount: 6800 },
+    { day: 'Sat', amount: 8900 },
+    { day: 'Sun', amount: 7200 },
+  ];
+  const maxWeeklyAmount =
+    dashboardMetrics?.maxWeeklyAmount ?? Math.max(...weeklySalesData.map((d) => d.amount), 1);
 
   // Hero & Showcase Settings
   const [heroTagline, setHeroTagline] = useState(siteSettings.hero.tagline);
@@ -181,6 +163,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
   const [productCatFilter, setProductCatFilter] = useState('All');
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [isExportingCSV, setIsExportingCSV] = useState(false);
 
   // Product Form State
   const [formName, setFormName] = useState('');
@@ -389,7 +372,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
         isBestSeller: existing?.isBestSeller ?? false,
       };
 
-      await saveProduct(updated);
+      await addProduct(updated);
       showToast('Product Updated', updated.name, 'success');
     } else {
       const newProd: Product = {
@@ -416,7 +399,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
         isBestSeller: false,
       };
 
-      await saveProduct(newProd);
+      await addProduct(newProd);
       showToast('New Product Created', newProd.name, 'success');
     }
 
@@ -446,6 +429,48 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
     setFormSizes((prev) =>
       prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
     );
+  };
+
+  // Export current product inventory from Turso to CSV file
+  const handleExportInventoryCSV = async () => {
+    if (isExportingCSV) return;
+    setIsExportingCSV(true);
+
+    try {
+      const result = await exportProductsToCSV({
+        fallbackProducts: products,
+      });
+
+      const blob = new Blob(['\uFEFF' + result.csv], {
+        type: 'text/csv;charset=utf-8;',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', result.filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+      (window as unknown as Record<string, unknown>).__LAST_CSV_EXPORT__ = {
+        filename: result.filename,
+        count: result.count,
+        source: result.source,
+        preview: result.csv.slice(0, 240),
+      };
+
+      showToast(
+        'Inventory Exported to CSV',
+        `Downloaded ${result.count} products (${result.filename})`,
+        'success'
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to export product inventory';
+      showToast('CSV Export Failed', msg, 'warn');
+    } finally {
+      setIsExportingCSV(false);
+    }
   };
 
   // Save Integrations Config
@@ -506,25 +531,25 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
     return (
       <div className="min-h-screen bg-[#111111] text-white flex flex-col justify-between selection:bg-neutral-800 selection:text-white font-sans">
         {/* Top bar with back to storefront link */}
-        <div className="max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={onBackToStore}
-            className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-neutral-400 hover:text-white transition-colors cursor-pointer group"
+            className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-neutral-400 hover:text-white transition-colors cursor-pointer group min-h-[44px]"
           >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Return to GAZU Storefront</span>
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform shrink-0" />
+            <span>Return to Storefront</span>
           </button>
 
-          <div className="flex items-center gap-2 text-[11px] font-mono tracking-widest text-neutral-500 uppercase">
+          <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-mono tracking-widest text-neutral-500 uppercase shrink-0">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
             <span>Restricted Gateway</span>
           </div>
         </div>
 
         {/* Centerpiece Authentication Card */}
-        <div className="w-full max-w-md mx-auto px-4 py-8">
-          <div className="bg-[#1c1c1c] border border-neutral-800 rounded-xl p-8 shadow-2xl space-y-6">
+        <div className="w-full max-w-md mx-auto px-4 py-6 sm:py-8">
+          <div className="bg-[#1c1c1c] border border-neutral-800 rounded-xl p-5 sm:p-8 shadow-2xl space-y-6">
             {/* Header Icon & Brand */}
             <div className="text-center space-y-2">
               <div className="w-14 h-14 mx-auto rounded-full bg-neutral-900 border border-neutral-700/80 flex items-center justify-center text-white shadow-inner">
@@ -583,7 +608,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
               <button
                 type="submit"
                 disabled={rateLimit.isLocked || isAuthenticating}
-                className="w-full bg-white text-black py-3 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-neutral-200 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+                className="w-full bg-white text-black py-3 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-neutral-200 transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-2 min-h-[44px]"
               >
                 <Unlock className="w-4 h-4" />
                 <span>{isAuthenticating ? 'Verifying Key...' : 'Unlock Admin Portal'}</span>
@@ -592,13 +617,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
 
             {/* Security Credential Assistant */}
             <div className="border-t border-neutral-800/80 pt-4 text-center space-y-2">
-              <p className="text-[11px] text-neutral-500">
+              <p className="text-[11px] text-neutral-500 break-all">
                 Default Master Key: <code className="bg-neutral-900 px-1.5 py-0.5 rounded text-neutral-300 font-mono text-[10px] select-all">{DEFAULT_ADMIN_PASSWORD}</code>
               </p>
               <button
                 type="button"
                 onClick={() => setPasswordInput(DEFAULT_ADMIN_PASSWORD)}
-                className="text-[11px] text-neutral-400 hover:text-white underline underline-offset-4 transition-colors cursor-pointer"
+                className="text-[11px] text-neutral-400 hover:text-white underline underline-offset-4 transition-colors cursor-pointer py-1"
               >
                 Auto-fill Default Key
               </button>
@@ -607,7 +632,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
         </div>
 
         {/* Footer info */}
-        <div className="text-center py-6 text-[11px] text-neutral-600">
+        <div className="text-center py-6 px-4 text-[11px] text-neutral-600">
           GAZU Architecture • End-to-End Encrypted Session
         </div>
       </div>
@@ -620,11 +645,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
   return (
     <div className="min-h-screen bg-[#f3f2ee] text-neutral-900 flex flex-col font-sans">
       {/* Top Fixed Admin Header */}
-      <header className="sticky top-0 z-40 bg-black text-white border-b border-neutral-800 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-display font-black text-xl tracking-tight text-white">GAZU</span>
-            <span className="bg-neutral-800 text-neutral-200 text-[10px] tracking-widest uppercase font-bold px-2 py-0.5 rounded">
+      <header className="sticky top-0 z-40 bg-black text-white border-b border-neutral-800 px-3 sm:px-8 py-3 flex items-center justify-between gap-2 shadow-md">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-display font-black text-lg sm:text-xl tracking-tight text-white">GAZU</span>
+            <span className="bg-neutral-800 text-neutral-200 text-[9px] sm:text-[10px] tracking-widest uppercase font-bold px-2 py-0.5 rounded truncate">
               Backend Portal
             </span>
           </div>
@@ -650,11 +675,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
         </div>
 
         {/* Top Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={onBackToStore}
-            className="flex items-center gap-1.5 text-xs text-neutral-300 hover:text-white px-3 py-1.5 rounded border border-neutral-700 hover:border-neutral-500 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-xs text-neutral-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded border border-neutral-700 hover:border-neutral-500 transition-colors cursor-pointer"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">View Live Store</span>
@@ -663,7 +688,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-1.5 text-xs text-rose-300 hover:text-white bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 px-3 py-1.5 rounded transition-colors cursor-pointer font-semibold"
+            className="flex items-center gap-1.5 text-xs text-rose-300 hover:text-white bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 px-2.5 sm:px-3 py-1.5 rounded transition-colors cursor-pointer font-semibold"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
@@ -772,7 +797,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 self-start sm:self-center">
+              <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-center">
+                <button
+                  type="button"
+                  onClick={handleExportInventoryCSV}
+                  disabled={isExportingCSV}
+                  className="inline-flex items-center gap-2 bg-black hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-md transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{isExportingCSV ? 'Exporting CSV...' : 'Export Inventory CSV'}</span>
+                </button>
+
                 <span
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
                     isTursoConnected
@@ -1475,22 +1510,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                 </select>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingProductId(null);
-                  setFormName('');
-                  setFormPrice(1990);
-                  setFormSalePrice('');
-                  setFormDesc('');
-                  setFormPrimaryImage('');
-                  setIsAddingProduct(!isAddingProduct);
-                }}
-                className="bg-black text-white px-5 py-2.5 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-800 transition-colors cursor-pointer rounded"
-              >
-                <Plus className="w-4 h-4" />
-                {isAddingProduct ? 'Close Form' : 'Add New Product'}
-              </button>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleExportInventoryCSV}
+                  disabled={isExportingCSV}
+                  className="bg-white text-neutral-900 border border-neutral-300 hover:border-black px-4 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer rounded disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{isExportingCSV ? 'Exporting...' : 'Export CSV'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingProductId(null);
+                    setFormName('');
+                    setFormPrice(1990);
+                    setFormSalePrice('');
+                    setFormDesc('');
+                    setFormPrimaryImage('');
+                    setIsAddingProduct(!isAddingProduct);
+                  }}
+                  className="bg-black text-white px-5 py-2.5 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-800 transition-colors cursor-pointer rounded"
+                >
+                  <Plus className="w-4 h-4" />
+                  {isAddingProduct ? 'Close Form' : 'Add New Product'}
+                </button>
+              </div>
             </div>
 
             {/* Add / Edit Form */}
@@ -1732,6 +1779,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
                         <button
                           type="button"
                           onClick={() => startEditProduct(p)}
+                          aria-label={`Edit ${p.name}`}
                           className="p-2 text-neutral-600 hover:text-black hover:bg-neutral-200 rounded transition-colors cursor-pointer flex items-center gap-1 text-xs"
                           title="Edit Product"
                         >
@@ -1741,11 +1789,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
 
                         <button
                           type="button"
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete "${p.name}"?`)) {
-                              deleteProduct(p.id);
-                            }
-                          }}
+                          onClick={() => deleteProduct(p.id)}
+                          aria-label={`Delete ${p.name}`}
                           className="p-2 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer flex items-center gap-1 text-xs"
                           title="Delete Product"
                         >
@@ -1927,13 +1972,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBackToStore }) => {
         {/* Tab 5: Turso & Cloudinary */}
         {activeTab === 'integrations' && (
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-lg border border-neutral-300">
-              <h3 className="text-base font-bold uppercase tracking-wider text-neutral-900">
-                Cloud Backend & Media Credentials
-              </h3>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                Link your Turso database and Cloudinary storage. Unsigned preset mode requires zero API secrets.
-              </p>
+            <div className="bg-white p-6 rounded-lg border border-neutral-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold uppercase tracking-wider text-neutral-900">
+                  Cloud Backend & Media Credentials
+                </h3>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Link your Turso database and Cloudinary storage. Unsigned preset mode requires zero API secrets.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEnvModalOpen(true)}
+                className="inline-flex items-center gap-2 bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                Env Validator & Ephemeral Setup ({envValidation.presentKeys.length}/4)
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

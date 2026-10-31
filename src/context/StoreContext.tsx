@@ -11,19 +11,25 @@ import {
 import { siteConfig, type SiteConfig } from '../config/siteConfig';
 import {
   fetchProducts,
-  saveProduct as saveProductToTurso,
+  addProduct as addProductToTurso,
   deleteProduct as deleteProductFromTurso,
   createOrder as createTursoOrder,
   getTursoConfig,
   saveTursoConfig,
   initializeTursoSchema,
   type TursoConfig,
-} from '../services/turso';
+} from '../services/tursoService';
 import {
   getCloudinaryConfig,
   saveCloudinaryConfig,
   type CloudinaryConfig,
 } from '../services/cloudinary';
+import {
+  validateEnvironment,
+  isEnvPromptDismissed,
+  type EnvKey,
+  type EnvValidationResult,
+} from '../utils/envValidator';
 
 export interface UserAccount {
   name: string;
@@ -91,6 +97,7 @@ interface StoreContextType {
   products: Product[];
   isLoadingProducts: boolean;
   refreshProducts: () => Promise<void>;
+  addProduct: (product: Product) => Promise<void>;
   saveProduct: (product: Product) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
 
@@ -107,6 +114,13 @@ interface StoreContextType {
   cloudinaryConfig: CloudinaryConfig;
   updateCloudinaryConfig: (config: CloudinaryConfig) => void;
   isCloudinaryConfigured: boolean;
+
+  // Environment Validation & Ephemeral Session Setup
+  envValidation: EnvValidationResult;
+  isEnvModalOpen: boolean;
+  setIsEnvModalOpen: (open: boolean) => void;
+  applyEphemeralSessionEnv: (values: Record<EnvKey, string>) => Promise<void>;
+  clearEphemeralSessionEnv: () => void;
 
   // Admin Modal
   isAdminOpen: boolean;
@@ -272,7 +286,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast('Settings Reset', 'Restored original editorial defaults', 'info');
   };
 
-  // Integration Configs
+  // Integration Configs & Environment Validation
+  const [envValidation, setEnvValidation] = useState<EnvValidationResult>(() =>
+    validateEnvironment()
+  );
+  const [isEnvModalOpen, setIsEnvModalOpen] = useState<boolean>(() => {
+    const initial = validateEnvironment();
+    return !initial.isValid && !isEnvPromptDismissed();
+  });
+
   const [tursoConfig, setTursoConfigState] = useState<TursoConfig>(getTursoConfig);
   const [cloudinaryConfig, setCloudinaryConfigState] = useState<CloudinaryConfig>(getCloudinaryConfig);
   const [isTursoConnected, setIsTursoConnected] = useState(false);
@@ -328,6 +350,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateTursoConfig = async (config: TursoConfig): Promise<boolean> => {
     saveTursoConfig(config);
     setTursoConfigState(config);
+    setEnvValidation(validateEnvironment());
     if (!config.url || !config.authToken) {
       setIsTursoConnected(false);
       return false;
@@ -346,10 +369,55 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateCloudinaryConfig = (config: CloudinaryConfig) => {
     saveCloudinaryConfig(config);
     setCloudinaryConfigState(config);
+    setEnvValidation(validateEnvironment());
     showToast('Cloudinary Config Saved', 'Unsigned preset active for image uploads', 'success');
   };
 
-  const saveProduct = async (prod: Product) => {
+  const applyEphemeralSessionEnv = async (values: Record<EnvKey, string>): Promise<void> => {
+    const updatedValidation = validateEnvironment();
+    setEnvValidation(updatedValidation);
+
+    const nextCloudinary: CloudinaryConfig = {
+      cloudName: updatedValidation.values.VITE_CLOUDINARY_CLOUD_NAME || '',
+      uploadPreset: updatedValidation.values.VITE_CLOUDINARY_UPLOAD_PRESET || '',
+    };
+    const nextTurso: TursoConfig = {
+      url: updatedValidation.values.TURSO_DATABASE_URL || '',
+      authToken: updatedValidation.values.TURSO_AUTH_TOKEN || '',
+    };
+
+    setCloudinaryConfigState(nextCloudinary);
+    setTursoConfigState(nextTurso);
+
+    if (nextTurso.url && nextTurso.authToken) {
+      try {
+        const connected = await initializeTursoSchema();
+        setIsTursoConnected(connected);
+        if (connected) {
+          await refreshProducts();
+        }
+      } catch {
+        setIsTursoConnected(false);
+      }
+    }
+
+    const activeCount = Object.values(values).filter((v) => v?.trim().length > 0).length;
+    showToast(
+      'Ephemeral Session Active',
+      `${activeCount} variable(s) loaded in sessionStorage for this tab`,
+      'success'
+    );
+  };
+
+  const clearEphemeralSessionEnv = () => {
+    const updatedValidation = validateEnvironment();
+    setEnvValidation(updatedValidation);
+    setCloudinaryConfigState(getCloudinaryConfig());
+    setTursoConfigState(getTursoConfig());
+    showToast('Session Overrides Cleared', 'Reverted to .env / default configuration', 'info');
+  };
+
+  const addProduct = async (prod: Product) => {
     setProducts((prev) => {
       const exists = prev.some((p) => p.id === prod.id);
       if (exists) {
@@ -359,13 +427,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
 
     try {
-      await saveProductToTurso(prod);
-      showToast('Product Saved', prod.name, 'success');
+      const saved = await addProductToTurso(prod);
+      setProducts((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
+      showToast('Product Saved', saved.name, 'success');
     } catch (err) {
       console.error('Failed to save to Turso:', err);
       showToast('Saved Locally', 'Turso sync failed, saved in session', 'info');
     }
   };
+
+  const saveProduct = addProduct;
 
   const deleteProduct = async (id: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -647,6 +718,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         products,
         isLoadingProducts,
         refreshProducts,
+        addProduct,
         saveProduct,
         deleteProduct,
 
@@ -661,6 +733,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         cloudinaryConfig,
         updateCloudinaryConfig,
         isCloudinaryConfigured,
+
+        envValidation,
+        isEnvModalOpen,
+        setIsEnvModalOpen,
+        applyEphemeralSessionEnv,
+        clearEphemeralSessionEnv,
 
         isAdminOpen,
         setIsAdminOpen,

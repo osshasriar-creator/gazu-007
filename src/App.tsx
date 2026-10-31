@@ -24,6 +24,7 @@ import { AppDownloadModal } from './components/AppDownloadModal';
 import { AdminPage } from './components/AdminPage';
 import { Footer } from './components/Footer';
 import { ToastContainer } from './components/ToastContainer';
+import { EnvValidationModal } from './components/EnvValidationModal';
 
 interface MainLayoutProps {
   onNavigateToAdmin: () => void;
@@ -91,6 +92,26 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onNavigateToAdmin }) => {
   );
 };
 
+const GlobalEnvValidator: React.FC = () => {
+  const {
+    envValidation,
+    isEnvModalOpen,
+    setIsEnvModalOpen,
+    applyEphemeralSessionEnv,
+    clearEphemeralSessionEnv,
+  } = useStore();
+
+  return (
+    <EnvValidationModal
+      isOpen={isEnvModalOpen}
+      validation={envValidation}
+      onClose={() => setIsEnvModalOpen(false)}
+      onApplySessionEnv={applyEphemeralSessionEnv}
+      onClearSessionEnv={clearEphemeralSessionEnv}
+    />
+  );
+};
+
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState<string>(() => {
     if (typeof window === 'undefined') return '/';
@@ -126,6 +147,7 @@ export default function App() {
 
   return (
     <StoreProvider>
+      <GlobalEnvValidator />
       {currentRoute === '/admin' ? (
         <AdminPage onBackToStore={() => navigateTo('/')} />
       ) : (

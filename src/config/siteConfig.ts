@@ -88,6 +88,8 @@ export const siteConfig: SiteConfig = {
     tagline: 'FASHION\nTHAT MOVES\nWITH YOU.',
     brandWatermark: 'GAZU',
     collectionStamp: 'NEW\nCOLLECTION\n2024',
+    ctaPrimary: 'EXPLORE COLLECTION',
+    ctaSecondary: 'NEW ARRIVALS',
     // High-fashion black and white male model cutout with transparent background
     modelImage: '/assets/model/male-model-transparent-clean.png',
   },
@@ -131,7 +133,11 @@ export const siteConfig: SiteConfig = {
     hours: 'Mon - Sat: 9:00 AM - 9:00 PM',
   },
   cloudinary: {
-    cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '',
+    cloudName:
+      ((typeof import.meta !== 'undefined' &&
+        (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+          ?.VITE_CLOUDINARY_CLOUD_NAME) ||
+        ''),
     baseUrl: 'https://res.cloudinary.com',
     autoFormat: true,
     quality: 'auto',

@@ -15,6 +15,7 @@ interface ResponsiveProductImageProps {
   height?: number;
   loading?: 'lazy' | 'eager';
   sizes?: string;
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 /**
@@ -33,6 +34,7 @@ export const ResponsiveProductImage: React.FC<ResponsiveProductImageProps> = ({
   height,
   loading,
   sizes,
+  fetchPriority,
 }) => {
   const [hasError, setHasError] = useState(false);
 
@@ -47,6 +49,7 @@ export const ResponsiveProductImage: React.FC<ResponsiveProductImageProps> = ({
     height,
     loading,
     sizes,
+    fetchPriority,
   });
 
   return (
@@ -58,6 +61,7 @@ export const ResponsiveProductImage: React.FC<ResponsiveProductImageProps> = ({
       height={responsiveProps.height}
       loading={responsiveProps.loading}
       decoding={responsiveProps.decoding}
+      fetchPriority={responsiveProps.fetchPriority}
       alt={alt}
       className={className}
       onError={() => {
@@ -70,3 +74,4 @@ export const ResponsiveProductImage: React.FC<ResponsiveProductImageProps> = ({
 };
 
 export { getOptimizedImageUrl, getResponsiveImageProps };
+

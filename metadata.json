@@ -1,0 +1,6 @@
+{
+  "name": "GAZU Fashion Storefront",
+  "description": "Minimalist, editorial fashion e-commerce storefront for GAZU featuring interactive collections, smart cart, search, wishlist, and demo checkout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
